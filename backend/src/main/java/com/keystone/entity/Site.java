@@ -1,0 +1,4 @@
+package com.keystone.entity;
+import jakarta.persistence.*;
+@Entity @Table(name="sites")
+public class Site { @Id @GeneratedValue(strategy=GenerationType.IDENTITY) Long id; @ManyToOne(optional=false) @JoinColumn(name="customer_id") Customer customer; @Column(nullable=false) String name; @Column(nullable=false) String address; String city; String state; String postalCode; public Long getId(){return id;} public Customer getCustomer(){return customer;} public void setCustomer(Customer v){customer=v;} public String getName(){return name;} public void setName(String v){name=v;} public String getAddress(){return address;} public void setAddress(String v){address=v;} public String getCity(){return city;} public void setCity(String v){city=v;} public String getState(){return state;} public void setState(String v){state=v;} public String getPostalCode(){return postalCode;} public void setPostalCode(String v){postalCode=v;} }

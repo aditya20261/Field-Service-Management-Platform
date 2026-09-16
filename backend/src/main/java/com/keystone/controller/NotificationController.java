@@ -1,0 +1,4 @@
+package com.keystone.controller;
+import com.keystone.entity.*; import com.keystone.repository.*; import org.springframework.security.access.prepost.PreAuthorize; import org.springframework.web.bind.annotation.*; import java.util.*;
+@RestController @RequestMapping("/api/notifications") @PreAuthorize("isAuthenticated()")
+public class NotificationController { private final NotificationRepository repo; private final UserRepository users; public NotificationController(NotificationRepository r,UserRepository u){repo=r;users=u;} @GetMapping public List<Notification> mine(org.springframework.security.core.Authentication a){User u=users.findByEmail(a.getName()).orElseThrow();return repo.findAll().stream().filter(n->n.getUser().getId().equals(u.getId())).toList();} @PostMapping("/{id}/read") public Notification read(@PathVariable Long id){Notification n=repo.findById(id).orElseThrow();n.setReadFlag(true);return repo.save(n);} }

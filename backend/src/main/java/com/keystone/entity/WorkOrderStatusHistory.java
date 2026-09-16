@@ -1,0 +1,4 @@
+package com.keystone.entity;
+import jakarta.persistence.*; import java.time.LocalDateTime;
+@Entity @Table(name="work_order_status_history")
+public class WorkOrderStatusHistory { @Id @GeneratedValue(strategy=GenerationType.IDENTITY) Long id; @ManyToOne(optional=false) @JoinColumn(name="work_order_id") WorkOrder workOrder; @Enumerated(EnumType.STRING) @Column(nullable=false) WorkOrderStatus status; @ManyToOne @JoinColumn(name="changed_by") User changedBy; @Column(nullable=false) LocalDateTime changedAt=LocalDateTime.now(); public Long getId(){return id;} public WorkOrder getWorkOrder(){return workOrder;} public void setWorkOrder(WorkOrder v){workOrder=v;} public WorkOrderStatus getStatus(){return status;} public void setStatus(WorkOrderStatus v){status=v;} public User getChangedBy(){return changedBy;} public void setChangedBy(User v){changedBy=v;} public LocalDateTime getChangedAt(){return changedAt;} }

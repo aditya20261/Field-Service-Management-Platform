@@ -1,0 +1,2748 @@
+import React, { useEffect, useState } from "react";
+import { createRoot } from "react-dom/client";
+import "./style.css";
+
+import {
+  apiRequest,
+  setToken,
+  clearToken,
+  getToken
+} from "./services/api";
+
+/* =========================================================
+   TYPES
+========================================================= */
+
+type Auth = {
+  token: string;
+  role: string;
+  fullName: string;
+};
+
+type CustomerDashboard = {
+  totalWorkOrders: number;
+  newWorkOrders: number;
+  inProgressWorkOrders: number;
+  completedWorkOrders: number;
+  totalServiceRequests: number;
+  newServiceRequests: number;
+  inProgressServiceRequests: number;
+  completedServiceRequests: number;
+  totalSites: number;
+};
+
+type ManagerDashboard = {
+  totalWorkOrders: number;
+  newWorkOrders: number;
+  assignedWorkOrders: number;
+  inProgressWorkOrders: number;
+  completedWorkOrders: number;
+  onTimeSla: number;
+  atRiskSla: number;
+  breachedSla: number;
+  totalTechnicians: number;
+  activeTechnicians: number;
+  totalParts: number;
+  lowStockParts: number;
+  totalLoggedMinutes: number;
+};
+
+type User = {
+  id: number;
+  email: string;
+  fullName: string;
+  role: string;
+  active: boolean;
+};
+
+type WorkOrder = {
+  id: number;
+  customerId: number;
+  customerName: string;
+  siteId: number;
+  siteName: string;
+  technicianId: number | null;
+  technicianName: string | null;
+  title: string;
+  description: string;
+  status: string;
+  scheduledAt: string | null;
+  createdAt: string;
+  slaDueAt: string | null;
+  slaStatus: string | null;
+};
+
+type Site = {
+  id: number;
+  customerId: number;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  postalCode: string;
+};
+
+type ServiceRequest = {
+  id: number;
+  customerId: number;
+  customerName: string;
+  siteId: number;
+  siteName: string;
+  title: string;
+  description: string;
+  priority: string;
+  status: string;
+  createdAt: string;
+};
+
+/* =========================================================
+   AUTH STORAGE
+========================================================= */
+
+function getStoredAuth(): Auth | null {
+  const saved = localStorage.getItem("keystoneAuth");
+
+  if (!saved) {
+    return null;
+  }
+
+  try {
+    const auth = JSON.parse(saved) as Auth;
+
+    if (!auth.token || !auth.role) {
+      localStorage.removeItem("keystoneAuth");
+      clearToken();
+      return null;
+    }
+
+    if (!getToken()) {
+      setToken(auth.token);
+    }
+
+    return auth;
+  } catch {
+    localStorage.removeItem("keystoneAuth");
+    clearToken();
+    return null;
+  }
+}
+
+/* =========================================================
+   APP
+========================================================= */
+
+function App() {
+  const [auth, setAuth] = useState<Auth | null>(
+    getStoredAuth
+  );
+
+  function logout() {
+    clearToken();
+    localStorage.removeItem("keystoneAuth");
+    setAuth(null);
+  }
+
+  if (!auth) {
+    return <AuthScreen onLogin={setAuth} />;
+  }
+
+  if (auth.role === "CUSTOMER") {
+    return (
+      <CustomerPortal
+        auth={auth}
+        logout={logout}
+      />
+    );
+  }
+
+  return (
+    <RoleDashboard
+      auth={auth}
+      logout={logout}
+    />
+  );
+}
+
+/* =========================================================
+   LOGIN
+========================================================= */
+
+function AuthScreen({
+  onLogin
+}: {
+  onLogin: (auth: Auth) => void;
+}) {
+  const [register, setRegister] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+
+    setError("");
+    setLoading(true);
+
+    const endpoint = register
+      ? "/auth/register"
+      : "/auth/login";
+
+    const body = register
+      ? {
+          fullName: name,
+          email,
+          password
+        }
+      : {
+          email,
+          password
+        };
+
+    try {
+      const data = await apiRequest<Auth>(
+        endpoint,
+        {
+          method: "POST",
+          body: JSON.stringify(body)
+        }
+      );
+
+      if (!data.token) {
+        throw new Error(
+          "Authentication token was not returned"
+        );
+      }
+
+      setToken(data.token);
+
+      localStorage.setItem(
+        "keystoneAuth",
+        JSON.stringify(data)
+      );
+
+      onLogin(data);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Request failed"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <main className="auth">
+      <section className="auth-card">
+        <div className="brand">
+          KEYSTONE
+        </div>
+
+        <div className="auth-heading">
+          <span className="eyebrow">
+            FIELD SERVICE PLATFORM
+          </span>
+
+          <h1>
+            {register
+              ? "Create Customer Account"
+              : "Welcome Back"}
+          </h1>
+
+          <p>
+            {register
+              ? "Create your customer portal account."
+              : "Sign in to access your KEYSTONE workspace."}
+          </p>
+        </div>
+
+        <form onSubmit={submit}>
+          {register && (
+            <label>
+              Full Name
+
+              <input
+                value={name}
+                onChange={(e) =>
+                  setName(e.target.value)
+                }
+                placeholder="Enter your full name"
+                required
+              />
+            </label>
+          )}
+
+          <label>
+            Email
+
+            <input
+              type="email"
+              value={email}
+              onChange={(e) =>
+                setEmail(e.target.value)
+              }
+              placeholder="Enter your email"
+              required
+            />
+          </label>
+
+          <label>
+            Password
+
+            <input
+              type="password"
+              value={password}
+              onChange={(e) =>
+                setPassword(e.target.value)
+              }
+              placeholder="Enter your password"
+              required
+            />
+          </label>
+
+          <button
+            className="primary-button"
+            type="submit"
+            disabled={loading}
+          >
+            {loading
+              ? "Please wait..."
+              : register
+              ? "Create Account"
+              : "Sign In"}
+          </button>
+        </form>
+
+        {error && (
+          <div className="error-box">
+            {error}
+          </div>
+        )}
+
+        <button
+          className="text-button"
+          onClick={() => {
+            setRegister(!register);
+            setError("");
+          }}
+        >
+          {register
+            ? "Already have an account? Sign In"
+            : "Customer? Create an account"}
+        </button>
+      </section>
+    </main>
+  );
+}
+
+/* =========================================================
+   CUSTOMER PORTAL
+========================================================= */
+
+function CustomerPortal({
+  auth,
+  logout
+}: {
+  auth: Auth;
+  logout: () => void;
+}) {
+  const [
+    activePage,
+    setActivePage
+  ] = useState<
+    "dashboard" | "work-orders" | "sites" | "requests"
+  >("dashboard");
+
+  const [dashboard, setDashboard] =
+    useState<CustomerDashboard | null>(null);
+
+  const [workOrders, setWorkOrders] =
+    useState<WorkOrder[]>([]);
+
+  const [sites, setSites] =
+    useState<Site[]>([]);
+
+  const [serviceRequests, setServiceRequests] =
+    useState<ServiceRequest[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
+
+  async function loadCustomerData() {
+    setLoading(true);
+    setError("");
+
+    try {
+      const [
+        dashboardData,
+        workOrderData,
+        siteData,
+        requestData
+      ] = await Promise.all([
+        apiRequest<CustomerDashboard>(
+          "/customer/dashboard"
+        ),
+
+        apiRequest<WorkOrder[]>(
+          "/customer/work-orders"
+        ),
+
+        apiRequest<Site[]>(
+          "/sites/my"
+        ),
+
+        apiRequest<ServiceRequest[]>(
+          "/customer/service-requests"
+        )
+      ]);
+
+      setDashboard(dashboardData);
+      setWorkOrders(workOrderData);
+      setSites(siteData);
+      setServiceRequests(requestData);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Unable to load customer data"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadCustomerData();
+  }, []);
+
+  const pageTitle =
+    activePage === "dashboard"
+      ? "Customer Dashboard"
+      : activePage === "work-orders"
+      ? "My Work Orders"
+      : activePage === "sites"
+      ? "My Sites"
+      : "Service Requests";
+
+  return (
+    <main className="portal">
+      <aside className="sidebar">
+        <div>
+          <div className="sidebar-brand">
+            KEYSTONE
+          </div>
+
+          <div className="sidebar-subtitle">
+            Customer Portal
+          </div>
+
+          <nav className="navigation">
+            <button
+              className={
+                activePage === "dashboard"
+                  ? "nav-item active"
+                  : "nav-item"
+              }
+              onClick={() =>
+                setActivePage("dashboard")
+              }
+            >
+              <span>⌂</span>
+              Dashboard
+            </button>
+
+            <button
+              className={
+                activePage === "work-orders"
+                  ? "nav-item active"
+                  : "nav-item"
+              }
+              onClick={() =>
+                setActivePage("work-orders")
+              }
+            >
+              <span>▣</span>
+              Work Orders
+            </button>
+
+            <button
+              className={
+                activePage === "sites"
+                  ? "nav-item active"
+                  : "nav-item"
+              }
+              onClick={() =>
+                setActivePage("sites")
+              }
+            >
+              <span>⌖</span>
+              My Sites
+            </button>
+
+            <button
+              className={
+                activePage === "requests"
+                  ? "nav-item active"
+                  : "nav-item"
+              }
+              onClick={() =>
+                setActivePage("requests")
+              }
+            >
+              <span>◫</span>
+              Service Requests
+            </button>
+          </nav>
+        </div>
+
+        <div className="sidebar-bottom">
+          <div className="customer-mini">
+            <div className="avatar">
+              {auth.fullName
+                .charAt(0)
+                .toUpperCase()}
+            </div>
+
+            <div>
+              <strong>
+                {auth.fullName}
+              </strong>
+
+              <span>
+                Customer
+              </span>
+            </div>
+          </div>
+
+          <button
+            className="logout-button"
+            onClick={logout}
+          >
+            Sign Out
+          </button>
+        </div>
+      </aside>
+
+      <section className="content">
+        <header className="topbar">
+          <div>
+            <span className="topbar-label">
+              CUSTOMER PORTAL
+            </span>
+
+            <h1>{pageTitle}</h1>
+          </div>
+
+          <button
+            className="refresh-button"
+            onClick={loadCustomerData}
+          >
+            ↻ Refresh
+          </button>
+        </header>
+
+        {loading && (
+          <div className="loading-box">
+            Loading customer portal...
+          </div>
+        )}
+
+        {error && (
+          <div className="error-box content-error">
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && (
+          <>
+            {activePage === "dashboard" && (
+              <CustomerDashboardPage
+                dashboard={dashboard}
+                workOrders={workOrders}
+                serviceRequests={
+                  serviceRequests
+                }
+                sites={sites}
+              />
+            )}
+
+            {activePage === "work-orders" && (
+              <WorkOrdersPage
+                workOrders={workOrders}
+              />
+            )}
+
+            {activePage === "sites" && (
+              <SitesPage
+                sites={sites}
+              />
+            )}
+
+            {activePage === "requests" && (
+              <ServiceRequestsPage
+                sites={sites}
+                serviceRequests={
+                  serviceRequests
+                }
+                onCreated={loadCustomerData}
+              />
+            )}
+          </>
+        )}
+      </section>
+    </main>
+  );
+}
+
+/* =========================================================
+   CUSTOMER DASHBOARD
+========================================================= */
+
+function CustomerDashboardPage({
+  dashboard,
+  workOrders,
+  serviceRequests,
+  sites
+}: {
+  dashboard: CustomerDashboard | null;
+  workOrders: WorkOrder[];
+  serviceRequests: ServiceRequest[];
+  sites: Site[];
+}) {
+  if (!dashboard) {
+    return (
+      <div className="page-body">
+        <EmptyState text="Dashboard data unavailable." />
+      </div>
+    );
+  }
+
+  return (
+    <div className="page-body">
+      <div className="welcome-card">
+        <div>
+          <span className="eyebrow">
+            OVERVIEW
+          </span>
+
+          <h2>
+            Your Service Overview
+          </h2>
+
+          <p>
+            Monitor work orders, sites and service
+            requests from one place.
+          </p>
+        </div>
+
+        <div className="welcome-icon">
+          ◆
+        </div>
+      </div>
+
+      <div className="stats-grid">
+        <StatCard
+          label="Total Work Orders"
+          value={dashboard.totalWorkOrders}
+          icon="▣"
+        />
+
+        <StatCard
+          label="New Work Orders"
+          value={dashboard.newWorkOrders}
+          icon="＋"
+        />
+
+        <StatCard
+          label="In Progress"
+          value={dashboard.inProgressWorkOrders}
+          icon="◷"
+        />
+
+        <StatCard
+          label="Completed"
+          value={dashboard.completedWorkOrders}
+          icon="✓"
+        />
+
+        <StatCard
+          label="Service Requests"
+          value={dashboard.totalServiceRequests}
+          icon="◫"
+        />
+
+        <StatCard
+          label="My Sites"
+          value={dashboard.totalSites}
+          icon="⌖"
+        />
+      </div>
+
+      <div className="two-column">
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <h3>
+                Recent Work Orders
+              </h3>
+
+              <span>
+                Latest service activity
+              </span>
+            </div>
+          </div>
+
+          {workOrders.length === 0 ? (
+            <EmptyState text="No work orders found." />
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Site</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {workOrders
+                    .slice(0, 5)
+                    .map(
+                      (workOrder) => (
+                        <tr
+                          key={
+                            workOrder.id
+                          }
+                        >
+                          <td>
+                            #
+                            {
+                              workOrder.id
+                            }
+                          </td>
+
+                          <td>
+                            <strong>
+                              {
+                                workOrder.title
+                              }
+                            </strong>
+                          </td>
+
+                          <td>
+                            {
+                              workOrder.siteName
+                            }
+                          </td>
+
+                          <td>
+                            <StatusBadge
+                              status={
+                                workOrder.status
+                              }
+                            />
+                          </td>
+                        </tr>
+                      )
+                    )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <h3>
+                Service Requests
+              </h3>
+
+              <span>
+                Your latest requests
+              </span>
+            </div>
+          </div>
+
+          {serviceRequests.length === 0 ? (
+            <EmptyState text="No service requests found." />
+          ) : (
+            <div className="request-list">
+              {serviceRequests
+                .slice(0, 5)
+                .map(
+                  (request) => (
+                    <div
+                      className="request-item"
+                      key={request.id}
+                    >
+                      <div className="request-icon">
+                        ◫
+                      </div>
+
+                      <div className="request-info">
+                        <strong>
+                          {
+                            request.title
+                          }
+                        </strong>
+
+                        <span>
+                          {
+                            request.siteName
+                          }
+                        </span>
+                      </div>
+
+                      <StatusBadge
+                        status={
+                          request.status
+                        }
+                      />
+                    </div>
+                  )
+                )}
+            </div>
+          )}
+        </section>
+      </div>
+
+      <section className="panel">
+        <div className="panel-header">
+          <div>
+            <h3>
+              My Sites
+            </h3>
+
+            <span>
+              Sites associated with your account
+            </span>
+          </div>
+        </div>
+
+        <div className="site-grid">
+          {sites.map(
+            (site) => (
+              <div
+                className="site-card"
+                key={site.id}
+              >
+                <div className="site-icon">
+                  ⌖
+                </div>
+
+                <div>
+                  <h4>
+                    {site.name}
+                  </h4>
+
+                  <p>
+                    {site.address}
+                  </p>
+
+                  <span>
+                    {site.city},{" "}
+                    {site.state}{" "}
+                    {site.postalCode}
+                  </span>
+                </div>
+              </div>
+            )
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* =========================================================
+   STAT CARD
+========================================================= */
+
+function StatCard({
+  label,
+  value,
+  icon
+}: {
+  label: string;
+  value: number;
+  icon: string;
+}) {
+  return (
+    <div className="stat-card">
+      <div className="stat-icon">
+        {icon}
+      </div>
+
+      <div>
+        <span>{label}</span>
+
+        <strong>{value}</strong>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   CUSTOMER WORK ORDERS
+========================================================= */
+
+function WorkOrdersPage({
+  workOrders
+}: {
+  workOrders: WorkOrder[];
+}) {
+  const [selected, setSelected] =
+    useState<WorkOrder | null>(null);
+
+  return (
+    <div className="page-body">
+      <div className="section-heading">
+        <div>
+          <span className="eyebrow">
+            SERVICE HISTORY
+          </span>
+
+          <h2>
+            My Work Orders
+          </h2>
+
+          <p>
+            Work orders associated with your customer
+            account.
+          </p>
+        </div>
+
+        <div className="count-pill">
+          {workOrders.length} Work Orders
+        </div>
+      </div>
+
+      <section className="panel">
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>
+                  Work Order
+                </th>
+
+                <th>
+                  Title
+                </th>
+
+                <th>
+                  Site
+                </th>
+
+                <th>
+                  Technician
+                </th>
+
+                <th>
+                  Status
+                </th>
+
+                <th></th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {workOrders.map(
+                (workOrder) => (
+                  <tr
+                    key={
+                      workOrder.id
+                    }
+                  >
+                    <td>
+                      <strong>
+                        #
+                        {
+                          workOrder.id
+                        }
+                      </strong>
+                    </td>
+
+                    <td>
+                      {
+                        workOrder.title
+                      }
+                    </td>
+
+                    <td>
+                      {
+                        workOrder.siteName
+                      }
+                    </td>
+
+                    <td>
+                      {
+                        workOrder.technicianName ||
+                        "Not assigned"
+                      }
+                    </td>
+
+                    <td>
+                      <StatusBadge
+                        status={
+                          workOrder.status
+                        }
+                      />
+                    </td>
+
+                    <td>
+                      <button
+                        className="small-button"
+                        onClick={() =>
+                          setSelected(
+                            workOrder
+                          )
+                        }
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                )
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {selected && (
+        <div
+          className="modal-backdrop"
+          onClick={() =>
+            setSelected(null)
+          }
+        >
+          <div
+            className="modal"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <div className="modal-header">
+              <div>
+                <span className="eyebrow">
+                  WORK ORDER #
+                  {selected.id}
+                </span>
+
+                <h2>
+                  {selected.title}
+                </h2>
+              </div>
+
+              <button
+                className="close-button"
+                onClick={() =>
+                  setSelected(null)
+                }
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="detail-grid">
+              <Detail
+                label="Status"
+                value={
+                  selected.status
+                }
+              />
+
+              <Detail
+                label="Site"
+                value={
+                  selected.siteName
+                }
+              />
+
+              <Detail
+                label="Technician"
+                value={
+                  selected.technicianName ||
+                  "Not assigned"
+                }
+              />
+
+              <Detail
+                label="Scheduled"
+                value={
+                  selected.scheduledAt ||
+                  "Not scheduled"
+                }
+              />
+
+              <Detail
+                label="SLA Status"
+                value={
+                  selected.slaStatus ||
+                  "N/A"
+                }
+              />
+            </div>
+
+            <div className="description-box">
+              <span>
+                Description
+              </span>
+
+              <p>
+                {
+                  selected.description
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* =========================================================
+   CUSTOMER SITES
+========================================================= */
+
+function SitesPage({
+  sites
+}: {
+  sites: Site[];
+}) {
+  return (
+    <div className="page-body">
+      <div className="section-heading">
+        <div>
+          <span className="eyebrow">
+            LOCATIONS
+          </span>
+
+          <h2>
+            My Sites
+          </h2>
+
+          <p>
+            Sites connected to your customer profile.
+          </p>
+        </div>
+
+        <div className="count-pill">
+          {sites.length} Sites
+        </div>
+      </div>
+
+      <div className="site-grid large">
+        {sites.map(
+          (site) => (
+            <div
+              className="site-card"
+              key={site.id}
+            >
+              <div className="site-icon">
+                ⌖
+              </div>
+
+              <div>
+                <h3>
+                  {site.name}
+                </h3>
+
+                <p>
+                  {site.address}
+                </p>
+
+                <div className="site-meta">
+                  <span>
+                    {site.city}
+                  </span>
+
+                  <span>
+                    {site.state}
+                  </span>
+
+                  <span>
+                    {
+                      site.postalCode
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   SERVICE REQUESTS
+========================================================= */
+
+function ServiceRequestsPage({
+  sites,
+  serviceRequests,
+  onCreated
+}: {
+  sites: Site[];
+  serviceRequests: ServiceRequest[];
+  onCreated: () => Promise<void>;
+}) {
+  const [showForm, setShowForm] =
+    useState(false);
+
+  const [title, setTitle] =
+    useState("");
+
+  const [description, setDescription] =
+    useState("");
+
+  const [siteId, setSiteId] =
+    useState(
+      sites[0]?.id?.toString() || ""
+    );
+
+  const [priority, setPriority] =
+    useState("MEDIUM");
+
+  const [saving, setSaving] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const [selected, setSelected] =
+    useState<ServiceRequest | null>(
+      null
+    );
+
+  async function createRequest(
+    event: React.FormEvent
+  ) {
+    event.preventDefault();
+
+    setSaving(true);
+    setError("");
+
+    try {
+      await apiRequest<ServiceRequest>(
+        "/customer/service-requests",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            siteId: Number(siteId),
+            title,
+            description,
+            priority
+          })
+        }
+      );
+
+      setTitle("");
+      setDescription("");
+      setPriority("MEDIUM");
+      setShowForm(false);
+
+      await onCreated();
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Unable to create service request"
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="page-body">
+      <div className="section-heading">
+        <div>
+          <span className="eyebrow">
+            SUPPORT
+          </span>
+
+          <h2>
+            Service Requests
+          </h2>
+
+          <p>
+            Create and track maintenance requests.
+          </p>
+        </div>
+
+        <button
+          className="primary-button compact"
+          onClick={() =>
+            setShowForm(!showForm)
+          }
+        >
+          {showForm
+            ? "Close"
+            : "+ New Request"}
+        </button>
+      </div>
+
+      {showForm && (
+        <section className="panel form-panel">
+          <div className="panel-header">
+            <div>
+              <h3>
+                Create Service Request
+              </h3>
+
+              <span>
+                Submit a new request for one of your
+                sites.
+              </span>
+            </div>
+          </div>
+
+          <form
+            className="request-form"
+            onSubmit={createRequest}
+          >
+            <label>
+              Site
+
+              <select
+                value={siteId}
+                onChange={(e) =>
+                  setSiteId(
+                    e.target.value
+                  )
+                }
+                required
+              >
+                <option value="">
+                  Select site
+                </option>
+
+                {sites.map(
+                  (site) => (
+                    <option
+                      key={site.id}
+                      value={site.id}
+                    >
+                      {site.name}
+                    </option>
+                  )
+                )}
+              </select>
+            </label>
+
+            <label>
+              Title
+
+              <input
+                value={title}
+                onChange={(e) =>
+                  setTitle(
+                    e.target.value
+                  )
+                }
+                placeholder="Describe the issue"
+                required
+              />
+            </label>
+
+            <label>
+              Priority
+
+              <select
+                value={priority}
+                onChange={(e) =>
+                  setPriority(
+                    e.target.value
+                  )
+                }
+              >
+                <option value="LOW">
+                  LOW
+                </option>
+
+                <option value="MEDIUM">
+                  MEDIUM
+                </option>
+
+                <option value="HIGH">
+                  HIGH
+                </option>
+
+                <option value="URGENT">
+                  URGENT
+                </option>
+              </select>
+            </label>
+
+            <label className="full-width">
+              Description
+
+              <textarea
+                value={description}
+                onChange={(e) =>
+                  setDescription(
+                    e.target.value
+                  )
+                }
+                placeholder="Provide additional details..."
+                rows={4}
+              />
+            </label>
+
+            {error && (
+              <div className="error-box full-width">
+                {error}
+              </div>
+            )}
+
+            <div className="form-actions">
+              <button
+                type="submit"
+                className="primary-button"
+                disabled={saving}
+              >
+                {saving
+                  ? "Submitting..."
+                  : "Submit Request"}
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
+
+      <section className="panel">
+        <div className="panel-header">
+          <div>
+            <h3>
+              My Requests
+            </h3>
+
+            <span>
+              {serviceRequests.length} requests
+            </span>
+          </div>
+        </div>
+
+        {serviceRequests.length === 0 ? (
+          <EmptyState text="No service requests found." />
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Title</th>
+                  <th>Site</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {serviceRequests.map(
+                  (request) => (
+                    <tr
+                      key={
+                        request.id
+                      }
+                    >
+                      <td>
+                        #
+                        {
+                          request.id
+                        }
+                      </td>
+
+                      <td>
+                        <strong>
+                          {
+                            request.title
+                          }
+                        </strong>
+                      </td>
+
+                      <td>
+                        {
+                          request.siteName
+                        }
+                      </td>
+
+                      <td>
+                        <PriorityBadge
+                          priority={
+                            request.priority
+                          }
+                        />
+                      </td>
+
+                      <td>
+                        <StatusBadge
+                          status={
+                            request.status
+                          }
+                        />
+                      </td>
+
+                      <td>
+                        <button
+                          className="small-button"
+                          onClick={() =>
+                            setSelected(
+                              request
+                            )
+                          }
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {selected && (
+        <div
+          className="modal-backdrop"
+          onClick={() =>
+            setSelected(null)
+          }
+        >
+          <div
+            className="modal"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <div className="modal-header">
+              <div>
+                <span className="eyebrow">
+                  SERVICE REQUEST #
+                  {selected.id}
+                </span>
+
+                <h2>
+                  {selected.title}
+                </h2>
+              </div>
+
+              <button
+                className="close-button"
+                onClick={() =>
+                  setSelected(null)
+                }
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="detail-grid">
+              <Detail
+                label="Site"
+                value={
+                  selected.siteName
+                }
+              />
+
+              <Detail
+                label="Priority"
+                value={
+                  selected.priority
+                }
+              />
+
+              <Detail
+                label="Status"
+                value={
+                  selected.status
+                }
+              />
+
+              <Detail
+                label="Created"
+                value={
+                  selected.createdAt
+                }
+              />
+            </div>
+
+            <div className="description-box">
+              <span>
+                Description
+              </span>
+
+              <p>
+                {
+                  selected.description ||
+                  "No description provided."
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* =========================================================
+   MANAGER / DISPATCHER / TECHNICIAN WORKSPACE
+========================================================= */
+
+type RolePage =
+  | "home"
+  | "dashboard"
+  | "profile"
+  | "users"
+  | "operations"
+  | "work-orders"
+  | "technicians"
+  | "assigned";
+
+function RoleDashboard({
+  auth,
+  logout
+}: {
+  auth: Auth;
+  logout: () => void;
+}) {
+  const [activePage, setActivePage] =
+    useState<RolePage>("home");
+
+  const [managerDashboard, setManagerDashboard] =
+    useState<ManagerDashboard | null>(null);
+
+  const [dashboardLoading, setDashboardLoading] =
+    useState(false);
+
+  const [dashboardError, setDashboardError] =
+    useState("");
+
+  const [users, setUsers] =
+    useState<User[]>([]);
+
+  const [usersLoading, setUsersLoading] =
+    useState(false);
+
+  const [usersError, setUsersError] =
+    useState("");
+
+  async function loadUsers() {
+    setUsersLoading(true);
+    setUsersError("");
+
+    try {
+      const data =
+        await apiRequest<User[]>(
+          "/users"
+        );
+
+      setUsers(data);
+    } catch (error) {
+      setUsersError(
+        error instanceof Error
+          ? error.message
+          : "Unable to load users"
+      );
+    } finally {
+      setUsersLoading(false);
+    }
+  }
+
+  async function loadManagerDashboard() {
+    setDashboardLoading(true);
+    setDashboardError("");
+
+    try {
+      const data =
+        await apiRequest<ManagerDashboard>(
+          "/dashboard"
+        );
+
+      setManagerDashboard(data);
+    } catch (error) {
+      setDashboardError(
+        error instanceof Error
+          ? error.message
+          : "Unable to load dashboard"
+      );
+    } finally {
+      setDashboardLoading(false);
+    }
+  }
+
+  function openPage(page: RolePage) {
+    setActivePage(page);
+
+    if (
+      page === "dashboard" &&
+      (auth.role === "MANAGER" ||
+        auth.role === "DISPATCHER")
+    ) {
+      loadManagerDashboard();
+    }
+
+    if (
+      page === "users" &&
+      auth.role === "MANAGER"
+    ) {
+      loadUsers();
+    }
+  }
+
+  function renderHome() {
+    return (
+      <>
+        <span className="eyebrow">
+          {auth.role}
+        </span>
+
+        <h1>
+          Welcome, {auth.fullName}
+        </h1>
+
+        <p>
+          Protected{" "}
+          {auth.role.toLowerCase()}{" "}
+          workspace.
+        </p>
+
+        <div className="role-grid">
+
+          {/* DASHBOARD */}
+
+          <div
+            className="role-card"
+            onClick={() =>
+              openPage("dashboard")
+            }
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (
+                event.key === "Enter" ||
+                event.key === " "
+              ) {
+                openPage("dashboard");
+              }
+            }}
+          >
+            <strong>
+              Dashboard
+            </strong>
+
+            <span>
+              Role-based workspace
+            </span>
+          </div>
+
+          {/* PROFILE */}
+
+          <div
+            className="role-card"
+            onClick={() =>
+              openPage("profile")
+            }
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (
+                event.key === "Enter" ||
+                event.key === " "
+              ) {
+                openPage("profile");
+              }
+            }}
+          >
+            <strong>
+              Profile
+            </strong>
+
+            <span>
+              Manage profile information
+            </span>
+          </div>
+
+          {/* DISPATCHER */}
+
+          {auth.role === "DISPATCHER" && (
+            <>
+              <div
+                className="role-card"
+                onClick={() =>
+                  openPage(
+                    "work-orders"
+                  )
+                }
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (
+                    event.key ===
+                      "Enter" ||
+                    event.key === " "
+                  ) {
+                    openPage(
+                      "work-orders"
+                    );
+                  }
+                }}
+              >
+                <strong>
+                  Work Orders
+                </strong>
+
+                <span>
+                  Create, manage and assign
+                </span>
+              </div>
+
+              <div
+                className="role-card"
+                onClick={() =>
+                  openPage(
+                    "technicians"
+                  )
+                }
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (
+                    event.key ===
+                      "Enter" ||
+                    event.key === " "
+                  ) {
+                    openPage(
+                      "technicians"
+                    );
+                  }
+                }}
+              >
+                <strong>
+                  Technicians
+                </strong>
+
+                <span>
+                  Workload and availability
+                </span>
+              </div>
+            </>
+          )}
+
+          {/* TECHNICIAN */}
+
+          {auth.role === "TECHNICIAN" && (
+            <div
+              className="role-card"
+              onClick={() =>
+                openPage("assigned")
+              }
+              role="button"
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (
+                  event.key ===
+                    "Enter" ||
+                  event.key === " "
+                ) {
+                  openPage("assigned");
+                }
+              }}
+            >
+              <strong>
+                Assigned Work Orders
+              </strong>
+
+              <span>
+                Start, update and complete jobs
+              </span>
+            </div>
+          )}
+
+          {/* MANAGER */}
+
+          {auth.role === "MANAGER" && (
+            <>
+              <div
+                className="role-card"
+                onClick={() =>
+                  openPage("users")
+                }
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (
+                    event.key ===
+                      "Enter" ||
+                    event.key === " "
+                  ) {
+                    openPage("users");
+                  }
+                }}
+              >
+                <strong>
+                  Users
+                </strong>
+
+                <span>
+                  Manage platform users
+                </span>
+              </div>
+
+              <div
+                className="role-card"
+                onClick={() =>
+                  openPage(
+                    "operations"
+                  )
+                }
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (
+                    event.key ===
+                      "Enter" ||
+                    event.key === " "
+                  ) {
+                    openPage(
+                      "operations"
+                    );
+                  }
+                }}
+              >
+                <strong>
+                  Operations
+                </strong>
+
+                <span>
+                  Monitor field service
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      </>
+    );
+  }
+
+  function renderDashboard() {
+    if (
+      auth.role !== "MANAGER" &&
+      auth.role !== "DISPATCHER"
+    ) {
+      return (
+        <RoleMessage
+          title="Dashboard"
+          message="Dashboard is not available for this role."
+        />
+      );
+    }
+
+    if (dashboardLoading) {
+      return (
+        <div className="page-body">
+          <div className="loading-box">
+            Loading dashboard...
+          </div>
+        </div>
+      );
+    }
+
+    if (dashboardError) {
+      return (
+        <div className="page-body">
+          <div className="error-box">
+            {dashboardError}
+          </div>
+        </div>
+      );
+    }
+
+    if (!managerDashboard) {
+      return (
+        <div className="page-body">
+          <div className="panel">
+            <div className="panel-header">
+              <div>
+                <h3>
+                  Manager Dashboard
+                </h3>
+
+                <span>
+                  Live field service statistics
+                </span>
+              </div>
+            </div>
+
+            <div className="empty-state">
+              <div>
+                ◷
+              </div>
+
+              <p>
+                Click Refresh Dashboard to load data.
+              </p>
+
+              <button
+                className="primary-button compact"
+                onClick={
+                  loadManagerDashboard
+                }
+              >
+                Refresh Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const d =
+      managerDashboard;
+
+    return (
+      <div className="page-body">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">
+              OPERATIONS
+            </span>
+
+            <h2>
+              Manager Dashboard
+            </h2>
+
+            <p>
+              Real-time KEYSTONE field service overview.
+            </p>
+          </div>
+
+          <button
+            className="small-button"
+            onClick={
+              loadManagerDashboard
+            }
+          >
+            ↻ Refresh
+          </button>
+        </div>
+
+        <div className="stats-grid">
+          <StatCard
+            label="Total Work Orders"
+            value={
+              d.totalWorkOrders
+            }
+            icon="▣"
+          />
+
+          <StatCard
+            label="New Work Orders"
+            value={
+              d.newWorkOrders
+            }
+            icon="＋"
+          />
+
+          <StatCard
+            label="Assigned"
+            value={
+              d.assignedWorkOrders
+            }
+            icon="→"
+          />
+
+          <StatCard
+            label="In Progress"
+            value={
+              d.inProgressWorkOrders
+            }
+            icon="◷"
+          />
+
+          <StatCard
+            label="Completed"
+            value={
+              d.completedWorkOrders
+            }
+            icon="✓"
+          />
+
+          <StatCard
+            label="Total Technicians"
+            value={
+              d.totalTechnicians
+            }
+            icon="♙"
+          />
+
+          <StatCard
+            label="Active Technicians"
+            value={
+              d.activeTechnicians
+            }
+            icon="●"
+          />
+
+          <StatCard
+            label="Total Parts"
+            value={
+              d.totalParts
+            }
+            icon="□"
+          />
+
+          <StatCard
+            label="Low Stock Parts"
+            value={
+              d.lowStockParts
+            }
+            icon="!"
+          />
+
+          <StatCard
+            label="Logged Minutes"
+            value={
+              d.totalLoggedMinutes
+            }
+            icon="◴"
+          />
+        </div>
+
+        <div className="two-column">
+          <section className="panel">
+            <div className="panel-header">
+              <div>
+                <h3>
+                  SLA Overview
+                </h3>
+
+                <span>
+                  Current SLA status
+                </span>
+              </div>
+            </div>
+
+            <div className="request-list">
+              <div className="request-item">
+                <div className="request-icon">
+                  ✓
+                </div>
+
+                <div className="request-info">
+                  <strong>
+                    On Time
+                  </strong>
+
+                  <span>
+                    SLA within target
+                  </span>
+                </div>
+
+                <strong>
+                  {d.onTimeSla}
+                </strong>
+              </div>
+
+              <div className="request-item">
+                <div className="request-icon">
+                  ◷
+                </div>
+
+                <div className="request-info">
+                  <strong>
+                    At Risk
+                  </strong>
+
+                  <span>
+                    SLA approaching deadline
+                  </span>
+                </div>
+
+                <strong>
+                  {d.atRiskSla}
+                </strong>
+              </div>
+
+              <div className="request-item">
+                <div className="request-icon">
+                  !
+                </div>
+
+                <div className="request-info">
+                  <strong>
+                    Breached
+                  </strong>
+
+                  <span>
+                    SLA deadline exceeded
+                  </span>
+                </div>
+
+                <strong>
+                  {d.breachedSla}
+                </strong>
+              </div>
+            </div>
+          </section>
+
+          <section className="panel">
+            <div className="panel-header">
+              <div>
+                <h3>
+                  Technician Overview
+                </h3>
+
+                <span>
+                  Technician availability
+                </span>
+              </div>
+            </div>
+
+            <div className="empty-state">
+              <div>
+                ♙
+              </div>
+
+              <p>
+                {d.activeTechnicians} of{" "}
+                {d.totalTechnicians} technicians
+                are active.
+              </p>
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
+  function renderUsers() {
+    if (auth.role !== "MANAGER") {
+      return (
+        <RoleMessage
+          title="User Management"
+          message="User management is available only to managers."
+        />
+      );
+    }
+
+    if (usersLoading) {
+      return (
+        <div className="page-body">
+          <div className="loading-box">
+            Loading users...
+          </div>
+        </div>
+      );
+    }
+
+    if (usersError) {
+      return (
+        <div className="page-body">
+          <div className="error-box">
+            {usersError}
+          </div>
+
+          <button
+            className="primary-button compact"
+            onClick={loadUsers}
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="page-body">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">
+              ADMINISTRATION
+            </span>
+
+            <h2>
+              User Management
+            </h2>
+
+            <p>
+              Manage KEYSTONE platform users and roles.
+            </p>
+          </div>
+
+          <button
+            className="small-button"
+            onClick={loadUsers}
+          >
+            ↻ Refresh
+          </button>
+        </div>
+
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <h3>
+                Users
+              </h3>
+
+              <span>
+                {users.length} platform users
+              </span>
+            </div>
+          </div>
+
+          {users.length === 0 ? (
+            <EmptyState text="No users found." />
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>
+                      User
+                    </th>
+
+                    <th>
+                      Email
+                    </th>
+
+                    <th>
+                      Role
+                    </th>
+
+                    <th>
+                      Status
+                    </th>
+
+                    <th>
+                      Access
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {users.map((user) => (
+                    <tr key={user.id}>
+                      <td>
+                        <strong>
+                          {user.fullName}
+                        </strong>
+                      </td>
+
+                      <td>
+                        {user.email}
+                      </td>
+
+                      <td>
+                        <StatusBadge
+                          status={user.role}
+                        />
+                      </td>
+
+                      <td>
+                        <StatusBadge
+                          status={
+                            user.active
+                              ? "ACTIVE"
+                              : "INACTIVE"
+                          }
+                        />
+                      </td>
+
+                      <td>
+                        {user.role === "MANAGER"
+                          ? "Full platform access"
+                          : user.role === "DISPATCHER"
+                          ? "Operations access"
+                          : user.role === "TECHNICIAN"
+                          ? "Assigned jobs access"
+                          : "Customer portal access"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
+    );
+  }
+
+  function renderProfile() {
+    return (
+      <div className="page-body">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">
+              ACCOUNT
+            </span>
+
+            <h2>
+              Profile
+            </h2>
+
+            <p>
+              Manage your KEYSTONE profile information.
+            </p>
+          </div>
+        </div>
+
+        <section className="panel">
+          <div className="detail-grid">
+            <Detail
+              label="Full Name"
+              value={
+                auth.fullName
+              }
+            />
+
+            <Detail
+              label="Role"
+              value={
+                auth.role
+              }
+            />
+
+            <Detail
+              label="Account"
+              value="Authenticated"
+            />
+
+            <Detail
+              label="Access"
+              value="Protected workspace"
+            />
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  function renderOperations() {
+    return (
+      <div className="page-body">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">
+              FIELD SERVICE
+            </span>
+
+            <h2>
+              Operations
+            </h2>
+
+            <p>
+              Monitor field service operations.
+            </p>
+          </div>
+        </div>
+
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <h3>
+                Operations Monitor
+              </h3>
+
+              <span>
+                KEYSTONE operational workspace
+              </span>
+            </div>
+          </div>
+
+          <div className="empty-state">
+            <div>
+              ◆
+            </div>
+
+            <p>
+              Operations workspace opened successfully.
+            </p>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  function renderWorkOrders() {
+    return (
+      <RoleMessage
+        title="Work Orders"
+        message="Dispatcher work order management workspace."
+      />
+    );
+  }
+
+  function renderTechnicians() {
+    return (
+      <RoleMessage
+        title="Technicians"
+        message="Dispatcher technician management workspace."
+      />
+    );
+  }
+
+  function renderAssigned() {
+    return (
+      <RoleMessage
+        title="Assigned Work Orders"
+        message="Technician assigned work order workspace."
+      />
+    );
+  }
+
+  function renderPage() {
+    switch (activePage) {
+      case "dashboard":
+        return renderDashboard();
+
+      case "profile":
+        return renderProfile();
+
+      case "users":
+        return renderUsers();
+
+      case "operations":
+        return renderOperations();
+
+      case "work-orders":
+        return renderWorkOrders();
+
+      case "technicians":
+        return renderTechnicians();
+
+      case "assigned":
+        return renderAssigned();
+
+      default:
+        return renderHome();
+    }
+  }
+
+  return (
+    <main className="role-dashboard">
+      <header className="role-header">
+        <div className="brand">
+          KEYSTONE
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "16px"
+          }}
+        >
+          <span
+            style={{
+              fontSize: "13px",
+              opacity: 0.75
+            }}
+          >
+            {auth.role}
+          </span>
+
+          <button
+            className="logout-button dark"
+            onClick={logout}
+          >
+            Sign Out
+          </button>
+        </div>
+      </header>
+
+      <section className="role-content">
+
+        {activePage !== "home" && (
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              marginBottom: "20px"
+            }}
+          >
+            <button
+              className="small-button"
+              onClick={() =>
+                setActivePage("home")
+              }
+            >
+              ← Workspace
+            </button>
+
+            <button
+              className="small-button"
+              onClick={() =>
+                setActivePage("home")
+              }
+            >
+              Home
+            </button>
+          </div>
+        )}
+
+        {renderPage()}
+      </section>
+    </main>
+  );
+}
+
+/* =========================================================
+   ROLE MESSAGE
+========================================================= */
+
+function RoleMessage({
+  title,
+  message
+}: {
+  title: string;
+  message: string;
+}) {
+  return (
+    <div className="page-body">
+      <div className="section-heading">
+        <div>
+          <span className="eyebrow">
+            KEYSTONE
+          </span>
+
+          <h2>
+            {title}
+          </h2>
+
+          <p>
+            {message}
+          </p>
+        </div>
+      </div>
+
+      <section className="panel">
+        <div className="empty-state">
+          <div>
+            ✓
+          </div>
+
+          <p>
+            {title} page opened successfully.
+          </p>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* =========================================================
+   COMMON COMPONENTS
+========================================================= */
+
+function Detail({
+  label,
+  value
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="detail">
+      <span>
+        {label}
+      </span>
+
+      <strong>
+        {value}
+      </strong>
+    </div>
+  );
+}
+
+function StatusBadge({
+  status
+}: {
+  status: string;
+}) {
+  const className = status
+    .toLowerCase()
+    .replaceAll("_", "-")
+    .replaceAll(" ", "-");
+
+  return (
+    <span
+      className={`status ${className}`}
+    >
+      {status.replaceAll(
+        "_",
+        " "
+      )}
+    </span>
+  );
+}
+
+function PriorityBadge({
+  priority
+}: {
+  priority: string;
+}) {
+  return (
+    <span
+      className={`priority ${priority.toLowerCase()}`}
+    >
+      {priority}
+    </span>
+  );
+}
+
+function EmptyState({
+  text
+}: {
+  text: string;
+}) {
+  return (
+    <div className="empty-state">
+      <div>
+        ◌
+      </div>
+
+      <p>
+        {text}
+      </p>
+    </div>
+  );
+}
+
+/* =========================================================
+   REACT START
+========================================================= */
+
+const rootElement =
+  document.getElementById("root");
+
+if (!rootElement) {
+  throw new Error(
+    "KEYSTONE root element was not found."
+  );
+}
+
+createRoot(rootElement).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
