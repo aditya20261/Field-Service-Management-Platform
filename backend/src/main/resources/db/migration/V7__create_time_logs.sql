@@ -1,4 +1,4 @@
-CREATE TABLE time_logs (
+CREATE TABLE IF NOT EXISTS time_logs (
     id BIGINT NOT NULL AUTO_INCREMENT,
     work_order_id BIGINT NOT NULL,
     technician_id BIGINT NOT NULL,
