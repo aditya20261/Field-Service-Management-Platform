@@ -736,33 +736,39 @@ function CustomerDashboardPage({
                           }
                         >
                           <td>
-                            #
-                            {
-                              workOrder.id
-                            }
-                          </td>
+  #
+  {
+    workOrder.id
+  }
+</td>
 
-                          <td>
-                            <strong>
-                              {
-                                workOrder.title
-                              }
-                            </strong>
-                          </td>
+<td>
+  <strong>
+    {
+      workOrder.title
+    }
+  </strong>
+</td>
 
-                          <td>
-                            {
-                              workOrder.siteName
-                            }
-                          </td>
+<td>
+  {
+    workOrder.customerName
+  }
+</td>
 
-                          <td>
-                            <StatusBadge
-                              status={
-                                workOrder.status
-                              }
-                            />
-                          </td>
+<td>
+  {
+    workOrder.siteName
+  }
+</td>
+
+<td>
+  <StatusBadge
+    status={
+      workOrder.status
+    }
+  />
+</td>
                         </tr>
                       )
                     )}
@@ -4191,7 +4197,7 @@ setAssignedWorkOrders(data);
 
                         <td>
 
-                          
+
                           {request.siteName}
                         </td>
 
@@ -4546,14 +4552,17 @@ setAssignedWorkOrders(data);
                               </strong>
                             </td>
 
-                           <td>
-  {workOrder.customer?.user?.fullName ?? "—"}
+     <td>
+  {workOrder.customerName ||
+    workOrder.customer?.user?.fullName ||
+    "—"}
 </td>
 
 <td>
-  {workOrder.site?.name ?? "—"}
+  {workOrder.siteName ||
+    workOrder.site?.name ||
+    "—"}
 </td>
-
                             <td>
                               <strong>
                                 {
