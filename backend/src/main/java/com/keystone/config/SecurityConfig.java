@@ -25,100 +25,94 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Bean
-    PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+        @Bean
+        PasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
+        }
 
-    @Bean
-    UserDetailsService userDetailsService(UserRepository users) {
-        return email -> users.findByEmail(email)
-                .map(u -> (UserDetails) User.withUsername(u.getEmail())
-                        .password(u.getPassword())
-                        .roles(u.getRole().name())
-                        .disabled(!u.isActive())
-                        .build())
-                .orElseThrow(() ->
-                        new UsernameNotFoundException("User not found"));
-    }
+        @Bean
+        UserDetailsService userDetailsService(UserRepository users) {
+                return email -> users.findByEmail(email)
+                                .map(u -> (UserDetails) User.withUsername(u.getEmail())
+                                                .password(u.getPassword())
+                                                .roles(u.getRole().name())
+                                                .disabled(!u.isActive())
+                                                .build())
+                                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        }
 
-    @Bean
-    SecurityFilterChain securityFilterChain(
-            HttpSecurity http,
-            JwtAuthFilter jwt) throws Exception {
+        @Bean
+        SecurityFilterChain securityFilterChain(
+                        HttpSecurity http,
+                        JwtAuthFilter jwt) throws Exception {
 
-        return http
-                .csrf(c -> c.disable())
-                .cors(c -> {})
-                .sessionManagement(s ->
-                        s.sessionCreationPolicy(
-                                SessionCreationPolicy.STATELESS))
+                return http
+                                .csrf(c -> c.disable())
+                                .cors(c -> {
+                                })
+                                .sessionManagement(s -> s.sessionCreationPolicy(
+                                                SessionCreationPolicy.STATELESS))
 
-                .authorizeHttpRequests(a -> a
+                                .authorizeHttpRequests(a -> a
 
-                        // Public authentication endpoints
-                        .requestMatchers("/api/auth/**").permitAll()
+                                                // Public authentication endpoints
+                                                .requestMatchers("/api/auth/**").permitAll()
 
-                        // Spring error endpoint
-                        .requestMatchers("/error").permitAll()
+                                                // Spring error endpoint
+                                                .requestMatchers("/error").permitAll()
 
-                        // Swagger UI
-                        .requestMatchers(
-                                "/swagger-ui/**",
-                                "/swagger-ui.html"
-                        ).permitAll()
+                                                // Swagger UI
+                                                .requestMatchers(
+                                                                "/swagger-ui/**",
+                                                                "/swagger-ui.html")
+                                                .permitAll()
 
-                        // OpenAPI documentation
-                        .requestMatchers(
-                                "/v3/api-docs/**"
-                        ).permitAll()
+                                                // OpenAPI documentation
+                                                .requestMatchers(
+                                                                "/v3/api-docs/**")
+                                                .permitAll()
 
-                        // Everything else requires authentication
-                        .anyRequest().authenticated()
-                )
+                                                // Everything else requires authentication
+                                                .anyRequest().authenticated())
 
-                .addFilterBefore(
-                        jwt,
-                        UsernamePasswordAuthenticationFilter.class)
+                                .addFilterBefore(
+                                                jwt,
+                                                UsernamePasswordAuthenticationFilter.class)
 
-                .build();
-    }
+                                .build();
+        }
 
-    @Bean
-    CorsConfigurationSource corsConfigurationSource() {
+        @Bean
+        CorsConfigurationSource corsConfigurationSource() {
 
-        CorsConfiguration config = new CorsConfiguration();
+                CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://127.0.0.1:5173",
-                "http://localhost:4173",
-                "http://127.0.0.1:4173"
-        ));
+                config.setAllowedOrigins(List.of(
+                                "http://localhost:5173",
+                                "http://127.0.0.1:5173",
+                                "http://localhost:4173",
+                                "http://127.0.0.1:4173",
+                                "https://field-service-management-35mg.onrender.com"));
 
-        config.setAllowedMethods(List.of(
-                "GET",
-                "POST",
-                "PUT",
-                "DELETE",
-                "OPTIONS"
-        ));
+                config.setAllowedMethods(List.of(
+                                "GET",
+                                "POST",
+                                "PUT",
+                                "DELETE",
+                                "OPTIONS"));
 
-        config.setAllowedHeaders(List.of(
-                "Authorization",
-                "Content-Type"
-        ));
+                config.setAllowedHeaders(List.of(
+                                "Authorization",
+                                "Content-Type"));
 
-        config.setAllowCredentials(true);
+                config.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
-        source.registerCorsConfiguration(
-                "/**",
-                config
-        );
+                source.registerCorsConfiguration(
+                                "/**",
+                                config);
 
-        return source;
-    }
+                return source;
+        }
 }
