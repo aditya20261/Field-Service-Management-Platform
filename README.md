@@ -12,76 +12,76 @@ KEYSTONE provides a centralized platform for managing field-service operations f
 
 The system supports four dedicated roles:
 
-- **Manager**
-- **Dispatcher**
-- **Technician**
-- **Customer**
+* **Manager**
+* **Dispatcher**
+* **Technician**
+* **Customer**
 
 Each role has controlled access to the features required for its responsibilities through JWT-based authentication and role-based authorization.
 
 ---
 
-## ✨ Key Features
+## 🚀 Key Features
 
 ### 🔐 Authentication & Security
 
-- User login with JWT authentication
-- Role-based authorization
-- BCrypt password hashing
-- Protected REST APIs
-- Active/inactive user control
-- Secure token-based frontend API communication
+* User login with JWT authentication
+* Role-based authorization
+* BCrypt password hashing
+* Protected REST APIs
+* Active/inactive user control
+* Secure token-based frontend API communication
 
 ### 👨‍💼 Manager
 
 Managers can:
 
-- Access the management dashboard
-- View platform users
-- Create new users
-- Create Manager, Dispatcher, and Technician accounts
-- Manage operational information
-- Monitor overall field-service activity
+* Access the management dashboard
+* View platform users
+* Create new users
+* Create Manager, Dispatcher, and Technician accounts
+* Manage operational information
+* Monitor overall field-service activity
 
 ### 📋 Dispatcher
 
 Dispatchers can:
 
-- Access the dispatcher dashboard
-- View customers and sites
-- View service requests
-- Create work orders
-- Assign technicians to work orders
-- Monitor technician availability/workload
-- Track work-order status
-- View inventory information
-- Manage operational activities
+* Access the dispatcher dashboard
+* View customers and sites
+* View service requests
+* Create work orders
+* Assign technicians to work orders
+* Monitor technician availability/workload
+* Track work-order status
+* View inventory information
+* Manage operational activities
 
 ### 🔧 Technician
 
 Technicians can:
 
-- View assigned work orders
-- Start assigned jobs
-- Update work-order status
-- Complete assigned jobs
-- View job-related information
-- Receive notifications
-- Access their profile
+* View assigned work orders
+* Start assigned jobs
+* Update work-order status
+* Complete assigned jobs
+* View job-related information
+* Receive notifications
+* Access their profile
 
 ### 👤 Customer
 
 Customers can:
 
-- Register and log in
-- Access the customer dashboard
-- Manage their profile
-- View/manage sites
-- Create service requests
-- Track service requests
-- Track work orders
-- Receive notifications
-- Access profile information
+* Register and log in
+* Access the customer dashboard
+* Manage their profile
+* View/manage sites
+* Create service requests
+* Track service requests
+* Track work orders
+* Receive notifications
+* Access profile information
 
 ---
 
@@ -91,14 +91,11 @@ KEYSTONE supports the following work-order workflow:
 
 ```text
 NEW
- │
- ▼
+ ↓
 ASSIGNED
- │
- ▼
+ ↓
 IN_PROGRESS
- │
- ▼
+ ↓
 COMPLETED
 ```
 
@@ -106,7 +103,7 @@ The backend validates status transitions to prevent invalid workflow changes.
 
 ---
 
-## 🏗️ Technology Stack
+## 🛠️ Technology Stack
 
 ### Backend
 
@@ -137,39 +134,39 @@ The backend validates status transitions to prevent invalid workflow changes.
 ## 🧩 System Architecture
 
 ```text
-┌──────────────────────────────────────────────┐
-│                 KEYSTONE UI                  │
-│          React + TypeScript + Vite           │
-└──────────────────────┬───────────────────────┘
+┌───────────────────────────────────────────────┐
+│                 KEYSTONE UI                   │
+│          React + TypeScript + Vite            │
+└───────────────────────────────────────────────┘
                        │
                        │ REST API
                        │ JWT Bearer Token
                        ▼
-┌──────────────────────────────────────────────┐
-│              Spring Boot Backend             │
-│                                              │
-│ Controllers                                  │
-│ Services                                     │
-│ Repositories                                 │
-│ Security / JWT                               │
-│ DTOs                                         │
-└──────────────────────┬───────────────────────┘
+┌───────────────────────────────────────────────┐
+│             Spring Boot Backend               │
+│                                               │
+│ Controllers                                   │
+│ Services                                      │
+│ Repositories                                  │
+│ Security / JWT                                │
+│ DTOs                                          │
+└───────────────────────────────────────────────┘
                        │
                        │ JPA / Hibernate
                        ▼
-┌──────────────────────────────────────────────┐
-│                  MySQL 8                     │
-│                                              │
-│ Users                                        │
-│ Customers                                    │
-│ Sites                                        │
-│ Work Orders                                  │
-│ Service Requests                             │
-│ Inventory                                    │
-│ Notifications                               │
-│ Time Logs                                    │
-│ SLA / Operational Data                       │
-└──────────────────────────────────────────────┘
+┌───────────────────────────────────────────────┐
+│                   MySQL 8                     │
+│                                               │
+│ Users                                         │
+│ Customers                                     │
+│ Sites                                         │
+│ Work Orders                                   │
+│ Service Requests                              │
+│ Inventory                                     │
+│ Notifications                                 │
+│ Time Logs                                     │
+│ SLA / Operational Data                        │
+└───────────────────────────────────────────────┘
 ```
 
 ---
@@ -233,32 +230,25 @@ The application uses JWT-based authentication.
 
 ```text
 User
- │
- ▼
+ ↓
 Login
- │
- ▼
+ ↓
 Spring Security Authentication
- │
- ▼
+ ↓
 JWT Token Generated
- │
- ▼
+ ↓
 Frontend Stores Token
- │
- ▼
+ ↓
 Authorization: Bearer <token>
- │
- ▼
+ ↓
 Protected REST API
- │
- ▼
+ ↓
 Role-Based Access
 ```
 
 The frontend uses the token for authenticated API requests.
 
-The token is stored using the application authentication storage mechanism, including:
+The token is stored using the application's authentication storage mechanism, including:
 
 ```text
 keystone_token
@@ -303,17 +293,17 @@ Database schema management is handled through **Flyway migrations**.
 
 The project includes database structures supporting areas such as:
 
-- Users
-- Customers
-- Sites
-- Work Orders
-- Service Requests
-- Technicians
-- Inventory
-- Work Order Parts
-- Notifications
-- Time Logs
-- SLA information
+* Users
+* Customers
+* Sites
+* Work Orders
+* Service Requests
+* Technicians
+* Inventory
+* Work Order Parts
+* Notifications
+* Time Logs
+* SLA information
 
 ---
 
@@ -384,7 +374,7 @@ The exact endpoints and authorization requirements are defined by the backend co
 
 ## ⚙️ Backend Configuration
 
-The backend runs on:
+The backend runs locally on:
 
 ```text
 http://localhost:8080
@@ -396,7 +386,7 @@ The API base path is:
 /api
 ```
 
-Therefore, the frontend communicates with the backend using URLs such as:
+Therefore, the frontend communicates with the local backend using URLs such as:
 
 ```text
 http://localhost:8080/api/...
@@ -408,16 +398,71 @@ Database connection settings should be configured in:
 backend/src/main/resources/application.properties
 ```
 
+Production database credentials and other sensitive configuration values are provided through environment variables and are not stored in the repository.
+
 ---
 
-## 🚀 Running the Backend
+## 🚀 Live Deployment
+
+KEYSTONE is deployed and available as a live full-stack application.
+
+### Frontend – Live Application
+
+```text
+https://field-service-management-35mg.onrender.com
+```
+
+### Backend – Live API
+
+```text
+https://field-service-management-ez1y.onrender.com
+```
+
+### Production API Base URL
+
+```text
+https://field-service-management-ez1y.onrender.com/api
+```
+
+### Production Architecture
+
+```text
+User
+  ↓
+Render – React + TypeScript Frontend
+  ↓
+Render – Spring Boot REST API
+  ↓
+Aiven – MySQL Database
+```
+
+### Deployment Platform
+
+* **Frontend:** Render Static Site
+* **Backend:** Render Web Service
+* **Database:** Aiven MySQL
+* **Source Control:** GitHub
+
+### Production Frontend Configuration
+
+The deployed frontend uses:
+
+```text
+VITE_API_URL=https://field-service-management-ez1y.onrender.com/api
+```
+
+The production frontend communicates with the deployed Spring Boot backend through this API base URL.
+
+---
+
+## 💻 Running the Backend Locally
 
 ### 1. Navigate to the backend
 
 Windows:
 
 ```bash
-cd C:\KEYSTONE-MySQL-Phase4-Customer-Sites\KEYSTONE\backend
+cd "C:\Field Service Management\backend"
 ```
 
 ### 2. Build the project
@@ -440,12 +485,14 @@ http://localhost:8080
 
 ---
 
-## 💻 Running the Frontend
+## 🎨 Running the Frontend Locally
 
 ### 1. Navigate to the frontend
 
+Windows:
+
 ```bash
-cd C:\KEYSTONE-MySQL-Phase4-Customer-Sites\KEYSTONE\frontend
+cd "C:\Field Service Management\frontend"
 ```
 
 ### 2. Install dependencies
@@ -484,6 +531,14 @@ Example:
 VITE_API_URL=http://localhost:8080/api
 ```
 
+For production deployment:
+
+```text
+VITE_API_URL=https://field-service-management-ez1y.onrender.com/api
+```
+
+Production environment variables should be configured through the hosting platform rather than committed to the repository.
+
 ---
 
 ## 📊 Main Application Modules
@@ -496,9 +551,9 @@ Provides an overview of platform operations and access to management functionali
 
 Managers can view existing platform users and create new:
 
-- Manager
-- Dispatcher
-- Technician
+* Manager
+* Dispatcher
+* Technician
 
 accounts.
 
@@ -506,13 +561,13 @@ accounts.
 
 Dispatchers can manage:
 
-- Customers
-- Sites
-- Service Requests
-- Work Orders
-- Technician assignments
-- Technician workload
-- Inventory information
+* Customers
+* Sites
+* Service Requests
+* Work Orders
+* Technician assignments
+* Technician workload
+* Inventory information
 
 ### Technician Workspace
 
@@ -522,15 +577,15 @@ Technicians can manage their assigned work orders and update job progress.
 
 Customers can manage their service-related activities, including:
 
-- Sites
-- Service Requests
-- Work Orders
-- Notifications
-- Profile
+* Sites
+* Service Requests
+* Work Orders
+* Notifications
+* Profile
 
 ---
 
-## 🧪 Workflow Example
+## 🔄 Workflow Example
 
 A typical service workflow can be represented as:
 
@@ -566,17 +621,17 @@ The frontend provides role-specific dashboards and workspaces.
 
 The UI includes:
 
-- Sidebar navigation
-- Dashboard cards
-- Tables
-- Forms
-- Modal dialogs
-- Status badges
-- Responsive layouts
-- Loading states
-- Error states
-- Empty states
-- Role-specific navigation
+* Sidebar navigation
+* Dashboard cards
+* Tables
+* Forms
+* Modal dialogs
+* Status badges
+* Responsive layouts
+* Loading states
+* Error states
+* Empty states
+* Role-specific navigation
 
 ---
 
@@ -584,10 +639,10 @@ The UI includes:
 
 The frontend is designed to work across:
 
-- Desktop
-- Laptop
-- Tablet
-- Mobile-sized screens
+* Desktop
+* Laptop
+* Tablet
+* Mobile-sized screens
 
 The interface uses responsive CSS to adapt navigation, tables, forms, and dashboard components to different screen sizes.
 
@@ -597,15 +652,17 @@ The interface uses responsive CSS to adapt navigation, tables, forms, and dashbo
 
 The application implements several security mechanisms:
 
-- JWT authentication
-- BCrypt password hashing
-- Role-based authorization
-- Protected backend endpoints
-- Active/inactive user control
-- Authenticated API requests
-- Server-side authorization checks
+* JWT authentication
+* BCrypt password hashing
+* Role-based authorization
+* Protected backend endpoints
+* Active/inactive user control
+* Authenticated API requests
+* Server-side authorization checks
 
 Passwords are not stored as plain text.
+
+Sensitive credentials such as database passwords and JWT secrets are configured through environment variables and should not be committed to source control.
 
 ---
 
@@ -626,11 +683,13 @@ GitHub
 
 ---
 
-## 📋 Project Status
+## 📌 Project Status
 
 **Status: Completed**
 
 KEYSTONE has been completed through **Phase 18.4** with the core backend, frontend, authentication, role-based workflows, database integration, and major field-service operations implemented.
+
+The project has also been successfully deployed as a live full-stack application using Render and Aiven MySQL.
 
 The current project is in a stable, submission-ready state.
 
@@ -640,15 +699,15 @@ The current project is in a stable, submission-ready state.
 
 The main objectives of KEYSTONE are:
 
-- Centralize field-service operations
-- Improve work-order management
-- Simplify technician assignment
-- Provide role-specific workflows
-- Track service requests
-- Manage customer sites
-- Support inventory operations
-- Provide secure authentication
-- Improve visibility across field-service activities
+* Centralize field-service operations
+* Improve work-order management
+* Simplify technician assignment
+* Provide role-specific workflows
+* Track service requests
+* Manage customer sites
+* Support inventory operations
+* Provide secure authentication
+* Improve visibility across field-service activities
 
 ---
 
@@ -656,23 +715,25 @@ The main objectives of KEYSTONE are:
 
 This project demonstrates practical experience with:
 
-- Java development
-- Spring Boot
-- Spring Security
-- JWT authentication
-- REST API development
-- Spring Data JPA
-- Hibernate
-- MySQL
-- Flyway migrations
-- React
-- TypeScript
-- Vite
-- Role-based access control
-- Full-stack application integration
-- Database management
-- Frontend state management
-- Responsive UI development
+* Java development
+* Spring Boot
+* Spring Security
+* JWT authentication
+* REST API development
+* Spring Data JPA
+* Hibernate
+* MySQL
+* Flyway migrations
+* React
+* TypeScript
+* Vite
+* Role-based access control
+* Full-stack application integration
+* Database management
+* Frontend state management
+* Responsive UI development
+* Cloud deployment
+* REST API integration between deployed services
 
 ---
 
