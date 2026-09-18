@@ -4994,18 +4994,13 @@ function renderTechnicians() {
                               </strong>
                             </td>
 
-                            <td>
-                              {
-                                workOrder.customerName
-                              }
-                            </td>
+                           <td>
+  {workOrder.customer?.user?.fullName ?? "—"}
+</td>
 
-                            <td>
-                              {
-                                workOrder.siteName
-                              }
-                            </td>
-
+<td>
+  {workOrder.site?.name ?? "—"}
+</td>
                             <td>
                               <strong>
                                 {
