@@ -4,6 +4,10 @@ A Full-Stack Field Service Management Platform
 Java • Spring Boot • React • MySQL • JWT • REST API
 Developed as part of the Zidio Development Internship
 
+A Full-Stack Field Service Management Platform
+Java • Spring Boot • React • MySQL • JWT • REST API
+Developed as part of the Zidio Development Internship
+
 KEYSTONE is a full-stack **Field Service Management Platform** designed to streamline service operations between managers, dispatchers, technicians, and customers.
 
 The platform provides role-based access to manage users, customers, sites, service requests, work orders, technician assignments, inventory, notifications, and field-service workflows through a modern web application.
@@ -30,6 +34,50 @@ The system supports four dedicated roles:
 Each role has controlled access to the features required for its responsibilities through JWT-based authentication and role-based authorization.
 
 ---
+Live Application
+
+Frontend Deploy
+Link- https://field-service-management-35mg.onrender.com
+
+Backend Deploy
+link- https://field-service-management-ez1y.onrender.com
+
+## 🔑 Demo Login Credentials
+
+The following demo accounts are provided for evaluating the four role-based workflows in KEYSTONE.
+
+> **Note:** These credentials are intended only for project demonstration and evaluation.
+
+| Role           | Email                     | Password   |
+| -------------- | ------------------------- | ---------- |
+| **Manager**    | `manager@keystone.com`    | `password` |
+| **Dispatcher** | `dispatcher@keystone.com` | `password` |
+| **Technician** | `technician@keystone.com` | `password` |
+| **Customer**   | `customer@keystone.com`   | `password` |
+
+### Role Testing
+
+Evaluators can use the above accounts to verify the role-based functionality:
+
+* **Manager** → Dashboard, Users, Operations and management functionality
+* **Dispatcher** → Service Requests, Work Orders and Technician Assignment
+* **Technician** → Assigned Work Orders and job status workflow
+* **Customer** → Dashboard, Sites, Service Requests and Work Orders
+
+### Recommended Testing Flow
+
+```text
+Manager
+   ↓
+Dispatcher
+   ↓
+Technician
+   ↓
+Customer
+```
+
+Each account provides access only to the functionality permitted for its assigned role.
+
 
 ## 🚀 Key Features
 
