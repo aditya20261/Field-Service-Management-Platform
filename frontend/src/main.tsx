@@ -70,6 +70,18 @@ type WorkOrder = {
   createdAt: string;
   slaDueAt: string | null;
   slaStatus: string | null;
+
+  customer?: {
+    id: number;
+    user?: {
+      fullName: string;
+    };
+  };
+
+  site?: {
+    id: number;
+    name: string;
+  };
 };
 
 type Site = {
@@ -4530,16 +4542,16 @@ function RoleDashboard({
                               </strong>
                             </td>
 
-                            <td>
-                              {
-                                workOrder.customerName
-                              }
-                            </td>
+                           <td>
+                            {workOrder.customer?.user?.fullName ||
+                             workOrder.customerName ||
+                                "—"}
+                              </td>
 
-                            <td>
-                              {
-                                workOrder.siteName
-                              }
+                                  <td>
+                             {workOrder.site?.name ||
+                            workOrder.siteName ||
+                           "—"}
                             </td>
 
                             <td>
