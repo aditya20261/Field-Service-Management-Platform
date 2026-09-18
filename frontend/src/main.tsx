@@ -2296,11 +2296,13 @@ function RoleDashboard({
 
     try {
       const data =
-        await apiRequest<WorkOrder[]>(
-          "/technicians/me/work-orders"
-        );
+  await apiRequest<WorkOrder[]>(
+    "/technicians/me/work-orders"
+  );
 
-      setAssignedWorkOrders(data);
+console.log("TECHNICIAN WORK ORDERS:", data);
+
+setAssignedWorkOrders(data);
     } catch (error) {
       setAssignedError(
         error instanceof Error
@@ -4543,16 +4545,12 @@ function RoleDashboard({
                             </td>
 
                            <td>
-                            {workOrder.customer?.user?.fullName ||
-                             workOrder.customerName ||
-                                "—"}
-                              </td>
+  {workOrder.customer?.user?.fullName ?? "—"}
+</td>
 
-                                  <td>
-                             {workOrder.site?.name ||
-                            workOrder.siteName ||
-                           "—"}
-                            </td>
+<td>
+  {workOrder.site?.name ?? "—"}
+</td>
 
                             <td>
                               <strong>
